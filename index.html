@@ -1,0 +1,334 @@
+<?php
+//Main Control
+$hvac_state = file_get_contents('scripts/hvac.state');
+$hvac_target_temp = file_get_contents('scripts/target.temp');
+$hvac_fan = file_get_contents('scripts/fan.state', true);
+$room_celsius = shell_exec('cat /sys/bus/w1/devices/28-*/w1_slave | grep t= | awk \'{print $10}\' | awk \'{$0=substr($0,3,length($0)-5); print $0}\'');
+$cpuTemp0= shell_exec('cat /sys/class/thermal/thermal_zone0/temp');
+$cpuTemp1=($cpuTemp0/1000);
+
+$hvac_fan = preg_replace('/\s+/', '', $hvac_fan);
+$hvac_state = preg_replace('/\s+/', '', $hvac_state);
+$$hvac_target_temp  = preg_replace('/\s+/', '', $$hvac_target_temp);
+$room_fahrenheit=($room_celsius * 9 / 5 + 32);
+
+if (!empty($_POST)){
+  $temp_set = htmlspecialchars($_POST["temp_set"]);
+  $fan_mode = htmlspecialchars($_POST["fan_mode"]);
+  $hvac_mode = htmlspecialchars($_POST["hvac_mode"]);
+  
+  if ($temp_set !== $hvac_target_temp ){//target.temp
+
+    if ($temp_set >= 65 && $temp_set <= 85){// Hardcoded Min and Max temp in Fahrenheit
+      $target_temp_file = fopen("scripts/target.temp", "w") or die("Unable to open file!");
+      fwrite($target_temp_file, $temp_set);
+      fclose($target_temp_file);
+    }
+
+  }
+
+  if ($fan_mode !== $hvac_fan ){//hvac fan fan.state
+
+    $target_temp_file = fopen("scripts/fan.state", "w") or die("Unable to open file!");
+    fwrite($target_temp_file, $fan_mode);
+    fclose($target_temp_file);
+
+  }
+
+  if ($hvac_mode !== $hvac_state ){ //hvac mode hvac.state
+
+    $target_temp_file = fopen("scripts/hvac.state", "w") or die("Unable to open file!");
+    fwrite($target_temp_file, $hvac_mode);
+    fclose($target_temp_file);
+
+  }
+
+  header("Location: ".htmlspecialchars($_SERVER["PHP_SELF"]).""); 
+
+}
+?>
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Rasp HVAC Control</title>
+  
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
+  <script src="js/jquery.knob.min.js"></script>
+  
+  <script>
+  var longpress = 1000;
+    // holds the start time
+    var start;
+
+    window.addEventListener('load', function(){
+
+      var settemp = document.getElementById('locks')
+      var statusdiv = document.getElementById('statusdiv')
+      
+      var startx = 0
+      var dist = 0
+      
+      settemp.addEventListener('touchstart', function(e){
+        var touchobj = e.changedTouches[0] 
+        startx = parseInt(touchobj.clientX) 
+
+        start = new Date().getTime();
+
+        e.preventDefault()
+      }, false)
+      
+      settemp.addEventListener('touchmove', function(e){
+        var touchobj = e.changedTouches[0] 
+        var dist = parseInt(touchobj.clientX) - startx
+
+        e.preventDefault()
+      }, false)
+      
+      settemp.addEventListener('touchend', function(e){
+        var touchobj = e.changedTouches[0] 
+
+        if ( new Date().getTime() >= ( start + longpress )  ) {
+
+          $('#lock').hide();
+          $('#unlocktemp').attr('readonly', true);
+
+        } else {
+
+        }
+        e.preventDefault()
+      }, false)
+      
+    }, false)
+
+
+$(function($) {
+
+  setInterval(function() {
+
+    $.ajax({
+      url : 'tempsensor.php'
+    }).done(function(data) {
+      var temp = (data * 9 / 5 + 32);
+      $('#roomtemp').val(temp);
+    });
+
+  }, 10000);
+
+  
+  var longpress = 1000;
+
+  var start;
+
+  $('#locks').on( 'mousedown', function( e ) {
+    start = new Date().getTime();
+  } );
+
+  $('#locks').on( 'mouseleave', function( e ) {
+    start = 0;
+  } );
+
+  $('#locks').on( 'mouseup', function( e ) {
+    if ( new Date().getTime() >= ( start + longpress )  ) {  
+      $('#lock').hide();
+      $('#unlocktemp').attr('readonly', true);
+
+    } else {
+
+    }
+  } );
+
+//knob
+$(".knob").knob({
+
+  change : function (value) {
+
+  },
+  release : function (value) {
+
+  },
+  cancel : function () {
+
+  },
+
+  draw : function () {
+  }
+});
+
+});
+
+</script>
+
+
+
+<!-- Bootstrap Core CSS -->
+<link href="css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Custom CSS -->
+<link href="css/simple-sidebar.css" rel="stylesheet">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+      </head>
+
+      <body>
+
+        <div id="wrapper">
+
+          <!-- Sidebar -->
+          <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+              <?php include('menu.php') ?>
+              
+            </ul>
+          </div>
+          <!-- /#sidebar-wrapper -->
+
+          <!-- Page Content -->
+          <form action=<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?> method="post" >
+            <div id="page-content-wrapper">
+              <div class="container-fluid">
+                <div class="row">
+                  <div class="col-lg-12">
+
+                    <h1>HVAC Control Panel</h1>
+                    <br>
+                    <a href="#menu-toggle" class="btn btn-default" id="menu-toggle">Toggle Menu</a>
+                    <br>
+                    <div id="wrappermain">
+                      <div id="contain" style="position:relative;">
+
+                        <div id="lock">
+                          <img src="images/lock.png" id="locks" width="100" >
+                          <p style="background-color:white;color:black;opacity: 1; "> Hold to Unlock </p>
+                        </div>
+                        
+                        <div id="first">
+                          <div id="hvac-control-text"><h1> Set Temp </h1></div>
+                          <input style="width: 104px; height: 66px; vertical-align: middle;  margin-left: -152px; border: 0px none; background: transparent none repeat scroll 0% 0%; font: bold 40px Arial; text-align: center; color: rgb(102, 238, 102); padding: 0px;" class="knob" data-angleoffset="-125" data-min="65" data-max="85" data-anglearc="250" data-fgcolor="#66EE66" data-rotation="clockwise" value=<?php echo $hvac_target_temp ?> id="unlocktemp" name="temp_set" >
+                        </div>
+                      </div>
+                      
+                      <div id="second">
+
+                        <div id="hvac-control-text"><h1> Current Temp </h1></div>
+                        <input style="width: 104px; height: 66px; vertical-align: middle;  margin-left: -152px; border: 0px none; background: transparent none repeat scroll 0% 0%; font: bold 40px Arial; text-align: center; color: rgb(102, 238, 102); padding: 0px;" class="knob" data-angleoffset="-125" data-min="0" data-max="150" data-anglearc="250" data-fgcolor="#00bfff" data-rotation="clockwise" readonly value=<?php echo $room_fahrenheit ?> id="roomtemp" >
+                        
+
+                      </div>
+
+                      <div id="third">
+                        <div id="hvac-control-text"><h1> Fan Control </h1></div>
+                        <select id="fan_mode" name="fan_mode" class="custom-dropdown">
+                         <?php
+                         if ($hvac_fan == 'auto') {
+                          echo '
+                          <option value="auto">Auto</option>
+                          <option value="on">On</option> 
+                          <!--  <option value="off">Off</option> Code to turn off fan. Use this for testing only. -->
+                          ';
+                        } elseif ($hvac_fan == 'on') {
+                         echo '
+                         <option value="on">On</option>
+                         <!--  <option value="off">Off</option> Code to turn off fan. Use this for testing only. -->
+                         <option value="auto">Auto</option>
+                         ';
+                 // code block to turn off fan. Use this for testing only.
+                 // } elseif ($hvac_fan == 'off') {
+                 //       echo '
+                 //       <option value="off">Off</option>
+                 //       <option value="auto">Auto</option>
+                 //       <option value="on">On</option>
+                 //       ';
+                       }else{
+                         echo '<option value="auto">Error</option><!-- Error Code for fan. Use this for testing only. -->';
+                       }
+                       ?>
+                     </select> 
+                     
+                     <br>
+                     <br>
+                   </div>
+
+                   <div id="forth">
+                    <div id="hvac-control-text"><h1> HVAC Mode</h1></div>
+                    <select id="hvac_mode" name="hvac_mode" class="custom-dropdown">
+                     <?php
+                     if ($hvac_state == 'cool') {
+                      echo '
+                      <option value="cool">Cool</option>
+                      <option value="heat">Heat</option>
+                      <option value="off">Off</option>
+                      ';
+                    } elseif ($hvac_state == 'heat') {
+                     echo '
+                     <option value="heat">Heat</option>
+                     <option value="off">Off</option>
+                     <option value="cool">Cool</option>
+                     ';
+                   } elseif ($hvac_state == 'off') {
+                    echo '
+                    <option value="off">Off</option>
+                    <option value="cool">Cool</option>
+                    <option value="heat">Heat</option>
+                    ';
+                  }else{
+                   echo '<option value="off">Error</option> <!-- Error Code for HVAC. Use this for testing only. -->';
+                 }
+                 ?>
+               </select> 
+               <br>
+               <br>
+             </div>
+             
+             <div id="five">
+              <div id="hvac-control-text">
+                <h1>  </h1>
+
+              </div>
+              <input type="submit" value="Submit" class="custom-dropdown" id="settemp" >
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <form>
+   <!-- /#page-content-wrapper -->
+
+ </div>
+ <!-- /#wrapper -->
+
+ <!-- jQuery -->
+ <script src="js/jquery.js"></script>
+
+ <!-- Bootstrap Core JavaScript -->
+ <script src="js/bootstrap.min.js"></script>
+
+ <!-- Menu Toggle Script -->
+ <script>
+ $("#menu-toggle").click(function(e) {
+  e.preventDefault();
+  $("#wrapper").toggleClass("toggled");
+});
+ </script>
+
+</body>
+
+</html>

@@ -1,0 +1,246 @@
+<?php
+
+$cpuTemp0= shell_exec('cat /sys/class/thermal/thermal_zone0/temp');
+$cpuTemp1=($cpuTemp0/1000);
+
+
+$cpuinfo= (shell_exec('cat /proc/cpuinfo| grep Hardware'));
+$cpuinfo= $cpuinfo."<br>".(shell_exec('cat /proc/cpuinfo| grep Serial '));
+$cpuinfo= $cpuinfo."<br>"."Temp : ".$cpuTemp1."&deg;C";
+$revinfo= shell_exec('cat /proc/cpuinfo | grep Revision |  cut -d\   -f2');
+$revinfo = preg_replace('/\s+/', '', $revinfo);
+$uname= nl2br(shell_exec('uname -a'));
+$diskinfo= nl2br(shell_exec('df -h'));
+
+
+?>
+<!DOCTYPE html>
+
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Rasp HVAC Control</title>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
+  
+  
+
+  <script src="dist/jquery.knob.min.js"></script>
+
+
+
+  <script>
+  $(function($) {
+    
+
+  } );
+
+//knob
+$(".knob").knob({
+  
+  change : function (value) {
+   
+  },
+  release : function (value) {
+    
+  },
+  cancel : function () {
+    
+  },
+  
+  draw : function () {
+
+  }
+});
+
+
+});
+
+</script>
+<!-- Bootstrap Core CSS -->
+<link href="css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Custom CSS -->
+<link href="css/simple-sidebar.css" rel="stylesheet">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+      </head>
+
+      <body>
+
+        <div id="wrapper">
+
+          <!-- Sidebar -->
+          <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+              <?php include('menu.php') ?>
+            </ul>
+          </div>
+          <!-- /#sidebar-wrapper -->
+
+          <!-- Page Content -->
+          <form id="" >
+            <div id="page-content-wrapper">
+              <div class="container-fluid">
+                <div class="row">
+                  <div class="col-lg-12">
+
+                    <h1>Hardware Information</h1>
+
+                    <!--<p>Make sure to keep all page content within the <code>#page-content-wrapper</code>.</p>-->
+                    <a href="#menu-toggle" class="btn btn-default" id="menu-toggle">Toggle Menu</a>
+                    <table id="main">
+                      <tr>
+                        <td>Raspberry Model</td>
+                        <td><?php 
+                        switch ($revinfo) {
+                          case "0002":
+                          echo "Model B Revision 1.0 - 256 MB";
+                          break;
+                          case "0003":
+                          echo "Model B Revision 1.0 + ECN0001 - 256 MB";
+                          break;
+                          case "0004":
+                          echo "Model B Revision 2.0 Mounting holes - 256 MB";
+                          break;
+                          case "0005":
+                          echo "Model B Revision 2.0 Mounting holes - 256 MB";
+                          break;
+                          case "0006":
+                          echo "Model B Revision 2.0 Mounting holes - 256 MB";
+                          break;
+                          case "0007":
+                          echo "Model A Mounting holes - 256 MB";
+                          break;
+                          case "0008":
+                          echo "Model A Mounting holes - 256 MB";
+                          break;
+                          case "0009":
+                          echo "Model A Mounting holes - 256 MB";
+                          break;
+                          case "000d":
+                          echo "Model B Revision 2.0 Mounting holes - 512 MB";
+                          break;
+                          case "000e":
+                          echo "Model B Revision 2.0 Mounting holes - 512 MB";
+                          break;
+                          case "000f":
+                          echo "Model B Revision 2.0 Mounting holes - 512 MB";
+                          break;
+                          case "0010":
+                          echo "Model B+ - 512 MB";
+                          break;
+                          case "0011":
+                          echo "Compute Module - 512 MB";
+                          break;
+                          case "0012":
+                          echo "Model A+ - 256 MB";
+                          break;
+                          case "a01041":
+                          echo "Pi 2 Model B - 1024 MB";
+                          break;
+                          case "a21041":
+                          echo "Pi 2 Model B - 1024 MB";
+                          break;
+                          case "900092":
+                          echo "PiZero - 512 MB";
+                          break;
+                          case "a02082":
+                          echo "Pi 3 Model B - 1024 MB";
+                          break;
+                          case "a22082":
+                          echo "Pi 3 Model B - 1024 MB";
+                          break;
+                        }
+                        ?></td>
+                      </tr>
+
+                      <tr>
+                        <td>CPU Information</td>
+                        <td><?php echo $cpuinfo ?></td>
+                      </tr>
+                      <tr>
+                        <td>Uname</td>
+                        <td><?php echo $uname?></td>
+                      </tr>
+                      
+                      
+                    </table>
+
+
+                    <div id="wrappermain">
+                     
+                   <!--      <div id="first">
+                          <h1> Set Temp </h1>
+                          
+                        </div>
+                      <div id="second">
+                        <h1> Current Temp </h1>
+                        
+                      </div>
+
+                      <div id="third">
+                        <h1> Fan Control </h1>
+
+                 </div>
+
+                 <div id="forth">
+                  <h1> HVAC Mode</h1>
+                  
+           </div>
+           
+           <div id="five">
+            <h1>  </h1>
+            
+            <input type="button" value="Submit" class="custom-dropdown" id="settemp" >
+            
+          </div>
+        -->
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<form>
+ <!-- /#page-content-wrapper -->
+
+</div>
+<!-- /#wrapper -->
+
+<!-- jQuery -->
+<script src="js/jquery.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="js/bootstrap.min.js"></script>
+
+<!-- Menu Toggle Script -->
+<script>
+$("#menu-toggle").click(function(e) {
+  e.preventDefault();
+  $("#wrapper").toggleClass("toggled");
+});
+</script>
+
+
+
+</body>
+
+</html>
