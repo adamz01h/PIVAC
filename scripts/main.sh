@@ -15,7 +15,7 @@ cpuf=$(($cpuTemp1 * 9 / 5 + 32))
 
 temps=$(cat /sys/bus/w1/devices/28-*/w1_slave | grep = | awk '{print $10}' | awk '{$0=substr($0,3,length($0)-5); print $0}')
 room=$(($temps * 9 / 5 + 32))
-delay=0 # Set delay
+delay=5m # Set delay
 while true;do
 
 buffer=$(
